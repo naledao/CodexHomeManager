@@ -14,6 +14,8 @@ public partial class Form1 : Form
     private readonly System.Windows.Forms.Timer _autoSyncTimer = new();
     private readonly SemaphoreSlim _runtimeSyncLock = new(1, 1);
     private readonly ToolTip _toolTip = new();
+    private Panel? _topScrollHost;
+    private TableLayoutPanel? _topContentLayout;
 
     private IReadOnlyList<ProviderProfile> _profiles = [];
     private bool _suppressUiUpdates;
@@ -60,6 +62,7 @@ public partial class Form1 : Form
 
         ApplySavedPaths();
         RefreshStatuses();
+        UpdateResponsiveRootLayout();
         UpdateSessionSplitRatio();
         _startupPrepared = true;
     }
@@ -95,14 +98,11 @@ public partial class Form1 : Form
         {
             Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
             BackColor = Color.FromArgb(242, 245, 249);
-            AutoScroll = true;
+            AutoScroll = false;
+            MinimumSize = new Size(980, 680);
             rootLayout.BackColor = BackColor;
-            rootLayout.AutoScroll = true;
+            rootLayout.AutoScroll = false;
             rootLayout.Padding = new Padding(10);
-            rootLayout.RowStyles[0].SizeType = SizeType.AutoSize;
-            rootLayout.RowStyles[1].SizeType = SizeType.AutoSize;
-            rootLayout.RowStyles[2].SizeType = SizeType.Percent;
-            rootLayout.RowStyles[2].Height = 100F;
 
             grpPaths.Text = "第一步：目录设置";
             grpActions.Text = "第二步：操作中心";
@@ -113,7 +113,9 @@ public partial class Form1 : Form
             ConfigurePathSection();
             ConfigureActionSection();
             ConfigureSessionArea();
+            ConfigureResponsiveRootLayout();
             ConfigureToolTips();
+            UpdateResponsiveRootLayout();
             rootLayout.PerformLayout();
             PerformLayout();
         }
@@ -471,8 +473,8 @@ public partial class Form1 : Form
         grpLog.BackColor = Color.White;
         mainSplit.BackColor = Color.FromArgb(226, 232, 240);
         mainSplit.FixedPanel = FixedPanel.None;
-        mainSplit.Panel1MinSize = 560;
-        mainSplit.Panel2MinSize = 280;
+        mainSplit.Panel1MinSize = 420;
+        mainSplit.Panel2MinSize = 260;
         mainSplit.SplitterWidth = 8;
         mainSplit.Resize -= mainSplit_Resize;
         mainSplit.Resize += mainSplit_Resize;
@@ -512,6 +514,123 @@ public partial class Form1 : Form
         }
 
         txtLog.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+    }
+
+    private void ConfigureResponsiveRootLayout()
+    {
+        _topScrollHost ??= new Panel
+        {
+            Name = "topScrollHost",
+            Dock = DockStyle.Fill,
+            AutoScroll = true,
+            BackColor = BackColor,
+            Margin = Padding.Empty,
+            Padding = new Padding(0, 0, 6, 0)
+        };
+
+        _topContentLayout ??= new TableLayoutPanel
+        {
+            Name = "topContentLayout",
+            Dock = DockStyle.Top,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            ColumnCount = 1,
+            RowCount = 2,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty,
+            BackColor = BackColor
+        };
+
+        _topContentLayout.SuspendLayout();
+        try
+        {
+            _topContentLayout.ColumnStyles.Clear();
+            _topContentLayout.RowStyles.Clear();
+            _topContentLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            _topContentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _topContentLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+
+            grpPaths.Dock = DockStyle.Fill;
+            grpPaths.Margin = new Padding(0, 0, 0, 10);
+            grpActions.Dock = DockStyle.Fill;
+            grpActions.Margin = Padding.Empty;
+
+            _topContentLayout.Controls.Clear();
+            _topContentLayout.Controls.Add(grpPaths, 0, 0);
+            _topContentLayout.Controls.Add(grpActions, 0, 1);
+        }
+        finally
+        {
+            _topContentLayout.ResumeLayout(false);
+            _topContentLayout.PerformLayout();
+        }
+
+        _topScrollHost.SuspendLayout();
+        try
+        {
+            _topScrollHost.Controls.Clear();
+            _topScrollHost.Controls.Add(_topContentLayout);
+        }
+        finally
+        {
+            _topScrollHost.ResumeLayout(false);
+        }
+
+        rootLayout.SuspendLayout();
+        try
+        {
+            rootLayout.Controls.Clear();
+            rootLayout.ColumnStyles.Clear();
+            rootLayout.RowStyles.Clear();
+            rootLayout.ColumnCount = 1;
+            rootLayout.RowCount = 2;
+            rootLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 320F));
+            rootLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            rootLayout.Controls.Add(_topScrollHost, 0, 0);
+            rootLayout.Controls.Add(mainSplit, 0, 1);
+        }
+        finally
+        {
+            rootLayout.ResumeLayout(false);
+        }
+
+        rootLayout.Resize -= rootLayout_Resize;
+        rootLayout.Resize += rootLayout_Resize;
+    }
+
+    private void rootLayout_Resize(object? sender, EventArgs e)
+    {
+        UpdateResponsiveRootLayout();
+    }
+
+    private void UpdateResponsiveRootLayout()
+    {
+        if (rootLayout.RowStyles.Count < 2)
+        {
+            return;
+        }
+
+        var availableHeight = Math.Max(0, rootLayout.ClientSize.Height - rootLayout.Padding.Vertical);
+        if (availableHeight <= 0)
+        {
+            return;
+        }
+
+        const int minTopHeight = 240;
+        const int maxTopHeight = 430;
+        const int minBottomHeight = 280;
+
+        var minimumTopHeight = Math.Min(minTopHeight, Math.Max(160, availableHeight / 3));
+        var maximumTopHeight = Math.Max(minimumTopHeight, availableHeight - minBottomHeight);
+        var desiredTopHeight = (int)Math.Round(availableHeight * 0.42);
+        desiredTopHeight = Math.Max(minimumTopHeight, Math.Min(desiredTopHeight, maxTopHeight));
+        desiredTopHeight = Math.Max(minimumTopHeight, Math.Min(desiredTopHeight, maximumTopHeight));
+
+        rootLayout.RowStyles[0].SizeType = SizeType.Absolute;
+        rootLayout.RowStyles[0].Height = desiredTopHeight;
+        rootLayout.RowStyles[1].SizeType = SizeType.Percent;
+        rootLayout.RowStyles[1].Height = 100F;
     }
 
     private void mainSplit_Resize(object? sender, EventArgs e)
