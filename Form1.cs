@@ -42,6 +42,7 @@ public partial class Form1 : Form
         base.OnLoad(e);
         ApplySavedPaths();
         RefreshStatuses();
+        UpdateSessionSplitRatio();
         Log("\u5c31\u7eea\u3002");
     }
 
@@ -60,10 +61,14 @@ public partial class Form1 : Form
         {
             Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
             BackColor = Color.FromArgb(242, 245, 249);
+            AutoScroll = true;
             rootLayout.BackColor = BackColor;
+            rootLayout.AutoScroll = true;
             rootLayout.Padding = new Padding(10);
-            rootLayout.RowStyles[0].Height = 252F;
-            rootLayout.RowStyles[1].Height = 286F;
+            rootLayout.RowStyles[0].SizeType = SizeType.AutoSize;
+            rootLayout.RowStyles[1].SizeType = SizeType.AutoSize;
+            rootLayout.RowStyles[2].SizeType = SizeType.Percent;
+            rootLayout.RowStyles[2].Height = 100F;
 
             grpPaths.Text = "第一步：目录设置";
             grpActions.Text = "第二步：操作中心";
@@ -75,6 +80,8 @@ public partial class Form1 : Form
             ConfigureActionSection();
             ConfigureSessionArea();
             ConfigureToolTips();
+            rootLayout.PerformLayout();
+            PerformLayout();
         }
         finally
         {
@@ -86,18 +93,43 @@ public partial class Form1 : Form
     {
         grpPaths.BackColor = Color.White;
         grpPaths.ForeColor = Color.FromArgb(30, 41, 59);
+        grpPaths.AutoSize = true;
+        grpPaths.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+        grpPaths.MinimumSize = new Size(0, 0);
         pathsLayout.Padding = new Padding(6, 6, 6, 4);
+        pathsLayout.AutoSize = true;
+        pathsLayout.AutoSizeMode = AutoSizeMode.GrowAndShrink;
 
         lblStateHome.Text = "会话来源目录";
         lblAuthHome.Text = "当前账号目录";
         lblProfilesRoot.Text = "账号库存目录";
         lblSharedStoreHome.Text = "共享仓目录";
         lblTargetHome.Text = "运行目录";
+        btnBrowseState.Text = "...";
+        btnBrowseAuth.Text = "...";
+        btnBrowseProfilesRoot.Text = "...";
+        btnBrowseShared.Text = "...";
+        btnBrowseTarget.Text = "...";
+        btnBrowseAppExe.Text = "...";
+
+        foreach (var rowIndex in Enumerable.Range(0, pathsLayout.RowStyles.Count))
+        {
+            pathsLayout.RowStyles[rowIndex].SizeType = SizeType.AutoSize;
+        }
+
+        if (pathsLayout.ColumnStyles.Count >= 3)
+        {
+            pathsLayout.ColumnStyles[0].SizeType = SizeType.AutoSize;
+            pathsLayout.ColumnStyles[1].SizeType = SizeType.Percent;
+            pathsLayout.ColumnStyles[1].Width = 100F;
+            pathsLayout.ColumnStyles[2].SizeType = SizeType.AutoSize;
+        }
 
         foreach (var textBox in new[] { txtStateHome, txtAuthHome, txtProfilesRoot, txtSharedStoreHome, txtTargetHome, txtAppExe })
         {
             textBox.BorderStyle = BorderStyle.FixedSingle;
             textBox.Margin = new Padding(0, 2, 0, 4);
+            textBox.Anchor = AnchorStyles.Left | AnchorStyles.Right;
         }
 
         txtAuthHome.ReadOnly = true;
@@ -105,10 +137,24 @@ public partial class Form1 : Form
 
         foreach (var button in new[] { btnBrowseState, btnBrowseAuth, btnBrowseProfilesRoot, btnBrowseShared, btnBrowseTarget, btnBrowseAppExe })
         {
+            var textSize = TextRenderer.MeasureText(
+                button.Text,
+                button.Font,
+                new Size(int.MaxValue, int.MaxValue),
+                TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
+            var buttonWidth = Math.Max(44, textSize.Width + 16);
+
             button.AutoSize = false;
-            button.Size = new Size(92, 28);
+            button.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+            button.Size = new Size(buttonWidth, 36);
+            button.MinimumSize = new Size(buttonWidth, 36);
             button.Margin = new Padding(8, 1, 0, 1);
+            button.Padding = new Padding(0);
+            button.TextAlign = ContentAlignment.MiddleCenter;
+            button.Anchor = AnchorStyles.Left;
+            button.UseMnemonic = false;
             button.FlatStyle = FlatStyle.Flat;
+            button.FlatAppearance.BorderSize = 1;
             button.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
             button.BackColor = Color.White;
         }
@@ -139,46 +185,57 @@ public partial class Form1 : Form
         {
             grpActions.BackColor = Color.White;
             grpActions.ForeColor = Color.FromArgb(30, 41, 59);
+            grpActions.AutoSize = true;
+            grpActions.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            grpActions.MinimumSize = new Size(0, 0);
             grpActions.Controls.Clear();
 
             btnUseDefaults.Text = "恢复推荐路径";
             btnLoadSessions.Text = "读取来源会话";
-            btnLoadSharedSessions.Text = "读取共享仓会话";
+            btnLoadSharedSessions.Text = "读取共享会话";
             btnPrepareHome.Text = "初始化共享仓";
             btnImportSelected.Text = "导入选中会话";
             btnRepairTargetHome.Text = "同步运行目录";
-            btnSaveProfile.Text = "当前目录入库";
-            btnSetDefaultLaunchProfile.Text = "设为默认账号";
+            btnSaveProfile.Text = "保存当前账号";
+            btnSetDefaultLaunchProfile.Text = "设为默认启动";
             btnApplyProfile.Text = "切换账号";
-            btnImportProfile.Text = "导入账号文件";
-            btnExportProfile.Text = "导出账号文件";
+            btnImportProfile.Text = "导入账号";
+            btnExportProfile.Text = "导出账号";
             btnLaunchDefaultProfile.Text = "启动默认账号";
-            btnManageSharedStoreDefaults.Text = "共享仓默认映射";
+            btnManageSharedStoreDefaults.Text = "默认账号映射";
             btnSwitchProfileAndLaunch.Text = "切换并启动";
-            btnLaunchApp.Text = "同步后启动";
+            btnLaunchApp.Text = "同步并启动";
+            chkOverwriteTarget.Text = "覆盖运行目录";
+            chkRefreshUpdatedAt.Text = "刷新 updated_at";
+            chkAddWorkspaceHint.Text = "写入工作区提示";
+            chkAutoSyncConfigChanges.Text = "自动同步配置变更";
 
             cmbProfiles.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
             cmbProfiles.AutoCompleteSource = AutoCompleteSource.ListItems;
             cmbProfiles.Anchor = AnchorStyles.Left | AnchorStyles.Right;
             cmbProfiles.Margin = new Padding(0, 0, 8, 0);
+            cmbProfiles.MinimumSize = new Size(220, 32);
 
             var actionsHost = new TableLayoutPanel
             {
                 Name = "actionsHost",
                 Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 2,
+                ColumnCount = 1,
+                RowCount = 3,
                 Padding = new Padding(0, 4, 0, 0),
-                BackColor = Color.White
+                BackColor = Color.White,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
-            actionsHost.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 68F));
-            actionsHost.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32F));
-            actionsHost.RowStyles.Add(new RowStyle(SizeType.Absolute, 96F));
-            actionsHost.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            actionsHost.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            actionsHost.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            actionsHost.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            actionsHost.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
             var quickFlow = CreateWrappedFlow(
                 btnLoadSessions,
                 btnLoadSharedSessions,
+                btnPrepareHome,
                 btnImportSelected,
                 btnRepairTargetHome,
                 btnSwitchProfileAndLaunch,
@@ -186,17 +243,20 @@ public partial class Form1 : Form
 
             var quickGroup = CreateSectionGroup(
                 "常用流程",
-                "推荐顺序：选择账号 -> 读取来源会话 -> 导入选中会话 -> 同步运行目录 -> 切换并启动。",
+                "推荐顺序：先选账号，再读取会话，导入后同步运行目录，最后启动 Codex。",
                 quickFlow);
+            quickGroup.Margin = new Padding(0, 0, 0, 10);
 
             var accountContent = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
                 RowCount = 3,
-                Margin = Padding.Empty
+                Margin = Padding.Empty,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
-            accountContent.RowStyles.Add(new RowStyle(SizeType.Absolute, 40F));
+            accountContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             accountContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             accountContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
@@ -204,14 +264,16 @@ public partial class Form1 : Form
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 3,
-                Margin = Padding.Empty
+                Margin = Padding.Empty,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
             accountHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 48F));
             accountHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            accountHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 112F));
+            accountHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 126F));
             lblProfileName.Margin = new Padding(0, 9, 8, 0);
             lblProfileName.Text = "账号";
-            btnRefreshProfiles.Text = "刷新账号";
+            btnRefreshProfiles.Text = "刷新列表";
             accountHeader.Controls.Add(lblProfileName, 0, 0);
             accountHeader.Controls.Add(cmbProfiles, 1, 0);
             accountHeader.Controls.Add(btnRefreshProfiles, 2, 0);
@@ -239,114 +301,128 @@ public partial class Form1 : Form
 
             var accountGroup = CreateSectionGroup(
                 "账号管理",
-                "这里处理账号选择、入库、导入导出和默认账号设置。",
+                "这里处理账号选择、编辑、导入导出，以及默认启动账号设置。",
                 accountContent);
+            accountGroup.Margin = new Padding(0, 0, 0, 10);
 
             var workspaceContent = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 2,
-                Margin = Padding.Empty
+                RowCount = 1,
+                Margin = Padding.Empty,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
             workspaceContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            workspaceContent.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 
-            var workspaceFlow = CreateWrappedFlow(btnPrepareHome);
-
-            var optionsFlow = new FlowLayoutPanel
+            var optionsGrid = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
+                ColumnCount = 2,
+                RowCount = 2,
                 Margin = Padding.Empty,
-                Padding = Padding.Empty
+                Padding = Padding.Empty,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
+            optionsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            optionsGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            optionsGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            optionsGrid.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-            foreach (var checkBox in new[] { chkOverwriteTarget, chkRefreshUpdatedAt, chkAddWorkspaceHint, chkAutoSyncConfigChanges })
+            var optionControls = new[] { chkOverwriteTarget, chkRefreshUpdatedAt, chkAddWorkspaceHint, chkAutoSyncConfigChanges };
+            for (var index = 0; index < optionControls.Length; index++)
             {
+                var checkBox = optionControls[index];
                 checkBox.Margin = new Padding(0, 0, 0, 8);
-                optionsFlow.Controls.Add(checkBox);
+                optionsGrid.Controls.Add(checkBox, index % 2, index / 2);
             }
 
-            workspaceContent.Controls.Add(workspaceFlow, 0, 0);
-            workspaceContent.Controls.Add(optionsFlow, 0, 1);
+            workspaceContent.Controls.Add(optionsGrid, 0, 0);
 
             var workspaceGroup = CreateSectionGroup(
-                "开关与维护",
-                "不需要每次都点的设置放这里。",
+                "同步选项",
+                "控制导入、运行目录覆盖和配置自动同步的行为。",
                 workspaceContent);
+            workspaceGroup.Margin = new Padding(0, 0, 10, 0);
 
             var statusContent = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 5,
-                Margin = Padding.Empty
+                ColumnCount = 2,
+                RowCount = 3,
+                Margin = Padding.Empty,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
-            statusContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-            statusContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            statusContent.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
+            statusContent.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50F));
             statusContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             statusContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
             statusContent.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
-            foreach (var label in new[] { lblStatus, lblAppStatus, lblProviderStatus, lblDefaultProfileStatus, lblWatchStatus })
+            var statusLabels = new[] { lblStatus, lblAppStatus, lblProviderStatus, lblDefaultProfileStatus, lblWatchStatus };
+            for (var index = 0; index < statusLabels.Length; index++)
             {
+                var label = statusLabels[index];
                 label.AutoSize = true;
-                label.Margin = new Padding(0, 0, 0, 8);
-                label.MaximumSize = new Size(400, 0);
+                label.Margin = new Padding(0, 0, 8, 8);
+                label.MaximumSize = new Size(320, 0);
                 label.Padding = new Padding(10, 8, 10, 8);
                 label.BorderStyle = BorderStyle.FixedSingle;
                 label.BackColor = Color.FromArgb(248, 250, 252);
-                statusContent.Controls.Add(label);
+                statusContent.Controls.Add(label, index % 2, index / 2);
             }
 
             var statusGroup = CreateSectionGroup(
                 "当前状态",
-                "这些状态会随共享仓、账号和程序运行状态自动刷新。",
+                "这些状态会随共享仓、账号和程序运行情况自动刷新。",
                 statusContent);
+            statusGroup.Margin = Padding.Empty;
 
-            var rightStack = new TableLayoutPanel
+            var bottomHost = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 1,
-                RowCount = 2,
-                Margin = Padding.Empty
+                ColumnCount = 2,
+                RowCount = 1,
+                Margin = Padding.Empty,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink
             };
-            rightStack.RowStyles.Add(new RowStyle(SizeType.Percent, 44F));
-            rightStack.RowStyles.Add(new RowStyle(SizeType.Percent, 56F));
-            rightStack.Controls.Add(workspaceGroup, 0, 0);
-            rightStack.Controls.Add(statusGroup, 0, 1);
+            bottomHost.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 44F));
+            bottomHost.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 56F));
+            bottomHost.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            bottomHost.Controls.Add(workspaceGroup, 0, 0);
+            bottomHost.Controls.Add(statusGroup, 1, 0);
 
             actionsHost.Controls.Add(quickGroup, 0, 0);
-            actionsHost.SetColumnSpan(quickGroup, 2);
             actionsHost.Controls.Add(accountGroup, 0, 1);
-            actionsHost.Controls.Add(rightStack, 1, 1);
+            actionsHost.Controls.Add(bottomHost, 0, 2);
 
             grpActions.Controls.Add(actionsHost);
 
             StyleButton(btnLoadSessions, isPrimary: true);
             StyleButton(btnLoadSharedSessions, isPrimary: false);
+            StyleButton(btnPrepareHome, isPrimary: false, minWidth: 120);
             StyleButton(btnImportSelected, isPrimary: true);
             StyleButton(btnRepairTargetHome, isPrimary: false);
-            StyleButton(btnSwitchProfileAndLaunch, isPrimary: true, minWidth: 132);
-            StyleButton(btnLaunchApp, isPrimary: true, minWidth: 132);
-            StyleButton(btnRefreshProfiles, isPrimary: false, minWidth: 98);
+            StyleButton(btnSwitchProfileAndLaunch, isPrimary: true, minWidth: 120);
+            StyleButton(btnLaunchApp, isPrimary: true, minWidth: 120);
+            StyleButton(btnRefreshProfiles, isPrimary: false, minWidth: 104);
             StyleButton(btnEditProfileContents, isPrimary: false);
             StyleButton(btnSaveProfile, isPrimary: false);
             StyleButton(btnImportProfile, isPrimary: false);
             StyleButton(btnExportProfile, isPrimary: false);
-            StyleButton(btnSetDefaultLaunchProfile, isPrimary: false, minWidth: 118);
-            StyleButton(btnLaunchDefaultProfile, isPrimary: false, minWidth: 118);
-            StyleButton(btnManageSharedStoreDefaults, isPrimary: false, minWidth: 128);
+            StyleButton(btnSetDefaultLaunchProfile, isPrimary: false, minWidth: 120);
+            StyleButton(btnLaunchDefaultProfile, isPrimary: false, minWidth: 120);
+            StyleButton(btnManageSharedStoreDefaults, isPrimary: false, minWidth: 132);
             StyleButton(btnApplyProfile, isPrimary: false);
             StyleButton(btnCreateEmptyProfile, isPrimary: false);
             StyleButton(btnRenameProfile, isPrimary: false);
             StyleButton(btnDeleteProfile, isPrimary: false, isDanger: true);
             StyleButton(btnUseDefaults, isPrimary: false, minWidth: 116);
             StyleButton(btnCloseApp, isPrimary: false, isDanger: true, minWidth: 116);
-            StyleButton(btnPrepareHome, isPrimary: false, minWidth: 124);
         }
         finally
         {
@@ -360,8 +436,13 @@ public partial class Form1 : Form
         grpDetails.BackColor = Color.White;
         grpLog.BackColor = Color.White;
         mainSplit.BackColor = Color.FromArgb(226, 232, 240);
+        mainSplit.FixedPanel = FixedPanel.None;
+        mainSplit.Panel1MinSize = 560;
+        mainSplit.Panel2MinSize = 280;
         mainSplit.SplitterWidth = 8;
-        mainSplit.SplitterDistance = 900;
+        mainSplit.Resize -= mainSplit_Resize;
+        mainSplit.Resize += mainSplit_Resize;
+        UpdateSessionSplitRatio();
 
         lblSessionCount.Font = new Font(Font, FontStyle.Bold);
         lblSessionCount.Padding = new Padding(0, 2, 0, 4);
@@ -379,8 +460,8 @@ public partial class Form1 : Form
         sessionsGrid.DefaultCellStyle.SelectionForeColor = Color.White;
         sessionsGrid.AlternatingRowsDefaultCellStyle.BackColor = Color.FromArgb(248, 250, 252);
 
-        grpDetails.Height = 220;
-        detailsLayout.RowStyles[1].Height = 54F;
+        grpDetails.Height = 176;
+        detailsLayout.RowStyles[1].Height = 44F;
         txtSelectedTitle.Multiline = true;
         txtSelectedTitle.ScrollBars = ScrollBars.Vertical;
         txtSelectedPath.ScrollBars = ScrollBars.Both;
@@ -399,6 +480,38 @@ public partial class Form1 : Form
         txtLog.Font = new Font("Microsoft YaHei UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
     }
 
+    private void mainSplit_Resize(object? sender, EventArgs e)
+    {
+        UpdateSessionSplitRatio();
+    }
+
+    private void UpdateSessionSplitRatio()
+    {
+        var availableWidth = mainSplit.ClientSize.Width - mainSplit.SplitterWidth;
+        if (availableWidth <= 0)
+        {
+            return;
+        }
+
+        var desiredLeftWidth = (int)Math.Round(availableWidth * (2D / 3D));
+        var minLeftWidth = Math.Max(320, mainSplit.Panel1MinSize);
+        var minRightWidth = Math.Max(240, mainSplit.Panel2MinSize);
+        var maxLeftWidth = availableWidth - minRightWidth;
+        if (maxLeftWidth <= minLeftWidth)
+        {
+            desiredLeftWidth = Math.Max(1, availableWidth - minRightWidth);
+        }
+        else
+        {
+            desiredLeftWidth = Math.Max(minLeftWidth, Math.Min(desiredLeftWidth, maxLeftWidth));
+        }
+
+        if (desiredLeftWidth > 0 && desiredLeftWidth < availableWidth)
+        {
+            mainSplit.SplitterDistance = desiredLeftWidth;
+        }
+    }
+
     private void ConfigureToolTips()
     {
         _toolTip.AutoPopDelay = 12000;
@@ -410,6 +523,12 @@ public partial class Form1 : Form
         _toolTip.SetToolTip(txtAuthHome, "当前账号的临时落地目录。通常由你选中的账号自动生成，不需要手工维护。");
         _toolTip.SetToolTip(txtSharedStoreHome, "共享仓目录。导入后的会话会统一存到这里。");
         _toolTip.SetToolTip(txtTargetHome, "运行目录。启动 Codex 时，真正作为 CODEX_HOME 使用的是这里。");
+        _toolTip.SetToolTip(btnBrowseState, "选择会话来源目录");
+        _toolTip.SetToolTip(btnBrowseAuth, "选择当前账号目录");
+        _toolTip.SetToolTip(btnBrowseProfilesRoot, "选择账号库存目录");
+        _toolTip.SetToolTip(btnBrowseShared, "选择共享仓目录");
+        _toolTip.SetToolTip(btnBrowseTarget, "选择运行目录");
+        _toolTip.SetToolTip(btnBrowseAppExe, "选择 Codex 程序");
         _toolTip.SetToolTip(btnImportSelected, "把当前选中的来源会话导入到共享仓。批量导入时，不会再自动同步运行目录。");
         _toolTip.SetToolTip(btnSwitchProfileAndLaunch, "先切换到当前账号，再把共享仓同步到运行目录，最后启动 Codex。");
         _toolTip.SetToolTip(btnLaunchApp, "按当前路径设置直接同步并启动 Codex。适合共享仓内容已经准备好的情况。");
@@ -426,7 +545,9 @@ public partial class Form1 : Form
             Margin = new Padding(0, 0, 10, 10),
             Text = title,
             BackColor = Color.White,
-            ForeColor = Color.FromArgb(30, 41, 59)
+            ForeColor = Color.FromArgb(30, 41, 59),
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink
         };
 
         var layout = new TableLayoutPanel
@@ -434,17 +555,19 @@ public partial class Form1 : Form
             Dock = DockStyle.Fill,
             ColumnCount = 1,
             RowCount = 2,
-            Margin = Padding.Empty
+            Margin = Padding.Empty,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink
         };
         layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+        layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
 
         var descriptionLabel = new Label
         {
             AutoSize = true,
             ForeColor = Color.FromArgb(100, 116, 139),
             Margin = new Padding(0, 0, 0, 8),
-            MaximumSize = new Size(500, 0),
+            MaximumSize = new Size(960, 0),
             Text = description
         };
 
@@ -458,12 +581,14 @@ public partial class Form1 : Form
     {
         var flow = new FlowLayoutPanel
         {
-            Dock = DockStyle.Fill,
+            Dock = DockStyle.Top,
             FlowDirection = FlowDirection.LeftToRight,
             WrapContents = true,
             AutoScroll = true,
             Margin = Padding.Empty,
-            Padding = Padding.Empty
+            Padding = Padding.Empty,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink
         };
 
         foreach (var control in controls)
@@ -479,12 +604,21 @@ public partial class Form1 : Form
 
     private void StyleButton(Button button, bool isPrimary, bool isDanger = false, int minWidth = 104)
     {
+        var measuredText = TextRenderer.MeasureText(
+            button.Text,
+            button.Font,
+            new Size(int.MaxValue, int.MaxValue),
+            TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix);
+        var targetWidth = Math.Max(minWidth, measuredText.Width + 34);
+        var targetHeight = Math.Max(38, measuredText.Height + 16);
+
         button.AutoSize = false;
-        button.MinimumSize = new Size(minWidth, 36);
-        button.Size = new Size(Math.Max(button.Width, minWidth), 36);
+        button.MinimumSize = new Size(minWidth, 38);
+        button.Size = new Size(targetWidth, targetHeight);
         button.Margin = new Padding(0, 0, 8, 8);
-        button.Padding = new Padding(10, 4, 10, 4);
+        button.Padding = new Padding(12, 5, 12, 5);
         button.FlatStyle = FlatStyle.Flat;
+        button.FlatAppearance.BorderSize = 1;
         button.Cursor = Cursors.Hand;
         button.UseVisualStyleBackColor = false;
 
@@ -1996,20 +2130,20 @@ public partial class Form1 : Form
 
         if (string.IsNullOrWhiteSpace(defaultProfileName))
         {
-            return "\u9ed8\u8ba4\u542f\u52a8\u8d26\u53f7\uff1a\u672a\u8bbe\u7f6e";
+            return "\u9ed8\u8ba4\u8d26\u53f7\uff1a\u672a\u8bbe\u7f6e";
         }
 
         var sourceLabel = hasSharedStoreDefault
-            ? "\u5171\u4eab\u4ed3\u4e13\u7528"
-            : "\u65e7\u5168\u5c40\u517c\u5bb9";
+            ? "\u5171\u4eab\u4ed3"
+            : "\u5168\u5c40";
         var profile = _profiles.FirstOrDefault(item =>
             string.Equals(item.Name, defaultProfileName, StringComparison.OrdinalIgnoreCase));
         if (profile is not null)
         {
-            return $"\u9ed8\u8ba4\u542f\u52a8\u8d26\u53f7\uff1a{profile.Name} ({DisplayProvider(profile.ModelProvider)}\uff0c{sourceLabel})";
+            return $"\u9ed8\u8ba4\u8d26\u53f7\uff1a{profile.Name} | {DisplayProvider(profile.ModelProvider)} | {sourceLabel}";
         }
 
-        return $"\u9ed8\u8ba4\u542f\u52a8\u8d26\u53f7\uff1a{defaultProfileName} (\u672a\u627e\u5230\uff0c{sourceLabel})";
+        return $"\u9ed8\u8ba4\u8d26\u53f7\uff1a{defaultProfileName} | \u672a\u627e\u5230 | {sourceLabel}";
     }
 
     private static string DisplayProvider(string? provider)
