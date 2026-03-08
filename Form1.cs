@@ -30,6 +30,7 @@ public partial class Form1 : Form
     public Form1()
     {
         InitializeComponent();
+        ApplyApplicationIcon();
         ConfigureGrid();
         ConfigureUserFriendlyLayout();
         sessionsGrid.DataSource = _sessions;
@@ -52,6 +53,22 @@ public partial class Form1 : Form
         DisposeConfigWatchers();
         _autoSyncTimer.Stop();
         base.OnFormClosing(e);
+    }
+
+    private void ApplyApplicationIcon()
+    {
+        try
+        {
+            using var extractedIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            if (extractedIcon is not null)
+            {
+                Icon = (Icon)extractedIcon.Clone();
+            }
+        }
+        catch
+        {
+            // Best effort. The executable icon still applies even if runtime extraction fails.
+        }
     }
 
     private void ConfigureUserFriendlyLayout()
