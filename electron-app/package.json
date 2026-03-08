@@ -1,0 +1,67 @@
+{
+  "name": "codex-home-manager-electron",
+  "version": "0.2.4",
+  "description": "Codex Home Manager desktop client built with Electron, Vue 3, TypeScript and Element Plus.",
+  "main": "out/main/index.js",
+  "author": "ksdy",
+  "type": "module",
+  "scripts": {
+    "dev": "node ./scripts/run-with-modern-node.mjs electron-vite dev",
+    "build": "npm run typecheck && node ./scripts/run-with-modern-node.mjs electron-vite build",
+    "bump:version": "node ./scripts/bump-package-version.mjs",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && vue-tsc --noEmit -p tsconfig.web.json",
+    "preview": "node ./scripts/run-with-modern-node.mjs electron-vite preview",
+    "dist": "npm run bump:version && npm run build && node ./scripts/run-with-modern-node.mjs electron-builder",
+    "dist:win": "npm run bump:version && npm run build && node ./scripts/run-with-modern-node.mjs electron-builder --win nsis",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "element-plus": "^2.9.7",
+    "toml": "^3.0.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "electron-vite": "^2.3.0",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11",
+    "vue-tsc": "^2.1.10"
+  },
+  "build": {
+    "appId": "com.ksdy.codexhomemanager",
+    "productName": "Codex Home Manager",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "out/main/index.js"
+    },
+    "win": {
+      "icon": "../Assets/codex-home-manager.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "${productName}-${version}-setup.${ext}"
+    }
+  }
+}

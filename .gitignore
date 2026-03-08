@@ -5,3 +5,7 @@ publish/
 .vs/
 *.user
 *.suo
+electron-app/node_modules/
+electron-app/out/
+electron-app/release/
+electron-app/*.tsbuildinfo

@@ -1,0 +1,47 @@
+:root {
+  color-scheme: light;
+  font-family: 'HarmonyOS Sans SC', 'Microsoft YaHei UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --cm-bg: #eef3ed;
+  --cm-surface: rgba(255, 255, 255, 0.86);
+  --cm-surface-strong: rgba(255, 255, 255, 0.94);
+  --cm-line: rgba(21, 54, 48, 0.12);
+  --cm-text: #17342f;
+  --cm-text-soft: #53736d;
+  --cm-accent: #0f8b74;
+  --cm-accent-deep: #10584d;
+  --cm-accent-warm: #ef8f2f;
+  --cm-shadow: 0 24px 60px rgba(15, 69, 61, 0.12);
+  --el-color-primary: var(--cm-accent);
+  --el-border-radius-base: 16px;
+  --el-font-family: 'HarmonyOS Sans SC', 'Microsoft YaHei UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  --el-text-color-primary: var(--cm-text);
+  --el-text-color-regular: var(--cm-text-soft);
+  --el-border-color: rgba(15, 84, 74, 0.14);
+  --el-bg-color: rgba(255, 255, 255, 0.9);
+  --el-fill-color-light: rgba(15, 139, 116, 0.06);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  color: var(--cm-text);
+  background:
+    radial-gradient(circle at top left, rgba(15, 139, 116, 0.14), transparent 28%),
+    radial-gradient(circle at top right, rgba(239, 143, 47, 0.18), transparent 24%),
+    linear-gradient(180deg, #f6f7f2 0%, #edf4ef 52%, #e8f0eb 100%);
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
