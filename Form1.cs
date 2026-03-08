@@ -26,6 +26,7 @@ public partial class Form1 : Form
     private string _currentSessionScope = "\u6e90\u4f1a\u8bdd";
     private string _defaultLaunchProfileName = string.Empty;
     private Dictionary<string, string> _sharedStoreDefaultLaunchProfiles = new(StringComparer.OrdinalIgnoreCase);
+    private bool _startupPrepared;
 
     public Form1()
     {
@@ -41,10 +42,26 @@ public partial class Form1 : Form
     protected override void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
+        EnsureStartupPrepared();
+        Log("\u5c31\u7eea\u3002");
+    }
+
+    internal void PrepareForFirstShow()
+    {
+        EnsureStartupPrepared();
+    }
+
+    private void EnsureStartupPrepared()
+    {
+        if (_startupPrepared)
+        {
+            return;
+        }
+
         ApplySavedPaths();
         RefreshStatuses();
         UpdateSessionSplitRatio();
-        Log("\u5c31\u7eea\u3002");
+        _startupPrepared = true;
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
