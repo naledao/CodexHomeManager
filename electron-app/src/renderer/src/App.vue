@@ -561,7 +561,7 @@ function pushLog(tone: LogTone, text: string): void {
 
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
-    return error.message
+    return error.message.replace(/^Error invoking remote method '[^']+':\s*/i, '').trim()
   }
 
   return '发生未知错误。'

@@ -332,25 +332,91 @@ Write-Output $count
       throw new Error('Codex 已经在运行，请先关闭后再启动。')
     }
 
-    const executable = appExePath?.trim() ? appExePath.trim() : await this.findCodexAppExecutable()
+    const configuredExecutable = appExePath?.trim() ? appExePath.trim() : await this.findCodexAppExecutable()
+    const executable = configuredExecutable ? this.normalizeCodexLaunchExecutable(configuredExecutable) : null
     if (!executable || !fs.existsSync(executable)) {
       throw new Error('未找到 Codex 程序，请先选择 Codex.exe。')
     }
 
     const apiKey = this.readOpenAiApiKey(codexHome)
-    const child = spawn(executable, [], {
-      cwd: path.dirname(executable),
-      detached: true,
-      stdio: 'ignore',
-      windowsHide: false,
-      env: {
-        ...process.env,
-        CODEX_HOME: codexHome,
-        ...(apiKey?.trim() ? { OPENAI_API_KEY: apiKey } : {})
+    let child
+    try {
+      child = spawn(executable, [], {
+        cwd: path.dirname(executable),
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: false,
+        env: {
+          ...process.env,
+          CODEX_HOME: codexHome,
+          ...(apiKey?.trim() ? { OPENAI_API_KEY: apiKey } : {})
+        }
+      })
+    } catch (error) {
+      throw this.buildLaunchError(error, executable)
+    }
+
+    await new Promise<void>((resolve, reject) => {
+      const handleSpawn = () => {
+        cleanup()
+        resolve()
       }
+      const handleError = (error: Error) => {
+        cleanup()
+        reject(this.buildLaunchError(error, executable))
+      }
+      const cleanup = () => {
+        child.off('spawn', handleSpawn)
+        child.off('error', handleError)
+      }
+
+      child.once('spawn', handleSpawn)
+      child.once('error', handleError)
     })
 
     child.unref()
+  }
+
+  private normalizeCodexLaunchExecutable(executable: string): string {
+    const normalized = path.resolve(executable.trim())
+    const executableName = path.basename(normalized).toLowerCase()
+    const parentDirectoryName = path.basename(path.dirname(normalized)).toLowerCase()
+
+    // Users sometimes point at app\resources\codex.exe, which exists but cannot be launched directly.
+    if (executableName === 'codex.exe' && parentDirectoryName === 'resources') {
+      const siblingAppExecutable = path.resolve(path.dirname(normalized), '..', 'Codex.exe')
+      if (fs.existsSync(siblingAppExecutable)) {
+        return siblingAppExecutable
+      }
+    }
+
+    return normalized
+  }
+
+  private buildLaunchError(error: unknown, executable: string): Error {
+    const code =
+      typeof error === 'object' && error !== null && 'code' in error && typeof (error as { code?: unknown }).code === 'string'
+        ? String((error as { code: string }).code)
+        : ''
+
+    const executableName = path.basename(executable).toLowerCase()
+    const parentDirectoryName = path.basename(path.dirname(executable)).toLowerCase()
+    if (code === 'EPERM' && executableName === 'codex.exe' && parentDirectoryName === 'resources') {
+      const siblingAppExecutable = path.resolve(path.dirname(executable), '..', 'Codex.exe')
+      return new Error(
+        `当前选择的是受保护的资源程序：${executable}。请改用可启动的主程序：${siblingAppExecutable}。`
+      )
+    }
+
+    if (code === 'EPERM') {
+      return new Error(`Windows 拒绝启动该文件：${executable}。请确认这里选择的是 app\\Codex.exe，而不是 resources\\codex.exe。`)
+    }
+
+    if (error instanceof Error && error.message.trim()) {
+      return new Error(error.message)
+    }
+
+    return new Error(`启动 Codex 失败：${executable}`)
   }
 
   private findRunningCodexExecutable(): Promise<string | null> {

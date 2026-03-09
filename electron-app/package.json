@@ -1,6 +1,6 @@
 {
   "name": "codex-home-manager-electron",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Codex Home Manager desktop client built with Electron, Vue 3, TypeScript and Element Plus.",
   "main": "out/main/index.js",
   "author": "ksdy",
